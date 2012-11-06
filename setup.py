@@ -9,7 +9,7 @@ setup(
 		author_email='malzraa@gmail.com',
 		url='https://github.com/bwkeller/pytipsy',
 		py_modules=['pytipsy'],
-		licence='LICENCE.txt',
+		license='LICENCE.txt',
 		long_description=open('README.md').read(),
 		install_requires=[
 			"Numpy >= 1.5.1"
