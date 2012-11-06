@@ -119,6 +119,8 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True):
 		print "WTIPSY ERROR: Can't open file"
 		return 1
 	f.write(struct.pack("<diiiii", header['time'], header['n'], header['ndim'], header['ngas'], header['ndark'], header['nstar']))
+	if STANDARD:
+		f.write(struct.pack("xxxx"))
 	for i in range(header['ngas']):
 		f.write(struct.pack("<ffffffffffff", catg['mass'][i], catg['x'][i], catg['y'][i], catg['z'][i], catg['vx'][i], catg['vy'][i], 
 			catg['vz'][i], catg['dens'][i], catg['tempg'][i], catg['h'][i], catg['zmetal'][i], catg['phi']))
