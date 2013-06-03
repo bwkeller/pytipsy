@@ -1,5 +1,7 @@
+import re
 import struct
 import numpy as np
+
 def rtipsy(filename, VERBOSE=False):
 	"""rtipsy Reads tipsy files detecting the format: 
 	big endian, little endian, padded (standard) or non-padded header 
@@ -131,3 +133,18 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True):
 		f.write(struct.pack(">fffffffffff", cats['mass'][i], cats['x'][i], cats['y'][i], cats['z'][i], cats['vx'][i], cats['vy'][i], 
 			cats['vz'][i], cats['metals'][i], cats['tform'][i], cats['eps'][i], cats['phi'][i]))
 	f.close()
+
+class gaslog(dict):
+	def __init__(self, fname):
+		self.rawdata = np.genfromtxt(fname, comments='#', dtype=None, names=['dTime', 'z', 'E', 'T', 'U', 'Eth', 'Lx', 'Ly', 'Lz',
+			'WallTime', 'dwMax', 'dIMax', 'dEMax', 'dMultiEff'])
+		for name in self.rawdata.dtype.names:
+			self[name] = self.rawdata[name]
+		self.units = {'erg': float(re.findall('dErgPerGmUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) * \
+				float(re.findall('dMsolUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) * 1.9891e33, 'yr': \
+		float(re.findall('dSecUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) / 3.1557e7}
+		self['dTime'] *= self.units['yr']
+		self['E'] *= self.units['erg']
+		self['T'] *= self.units['erg']
+		self['U'] *= self.units['erg']
+		self['Eth'] *= self.units['erg']
