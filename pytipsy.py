@@ -52,7 +52,7 @@ def rtipsy(filename, VERBOSE=False):
 		print "    ndark: ",nd," bytes:",36*nd
 		print "    nstar: ",ns," bytes:",44*ns
 		print "Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns
-		f,close()
+		f.close()
 		return 1
 	catg = {'mass':np.zeros(ng), 'x':np.zeros(ng), 'y':np.zeros(ng), 'z':np.zeros(ng), 'vx':np.zeros(ng), 'vy':np.zeros(ng), 
 			'vz':np.zeros(ng), 'dens':np.zeros(ng), 'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng), 
