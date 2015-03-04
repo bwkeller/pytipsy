@@ -54,13 +54,20 @@ def rtipsy(filename, VERBOSE=False):
 		print "Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns
 		f.close()
 		return 1
-	catg = {'mass':np.zeros(ng), 'x':np.zeros(ng), 'y':np.zeros(ng), 'z':np.zeros(ng), 'vx':np.zeros(ng), 'vy':np.zeros(ng), 
-			'vz':np.zeros(ng), 'dens':np.zeros(ng), 'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng), 
-			'phi':np.zeros(ng)}
-	catd = {'mass':np.zeros(nd), 'x':np.zeros(nd), 'y':np.zeros(nd), 'z':np.zeros(nd), 'vx':np.zeros(nd), 'vy':np.zeros(nd), 
-			'vz':np.zeros(nd), 'eps':np.zeros(nd), 'phi':np.zeros(nd)}
-	cats = {'mass':np.zeros(ns), 'x':np.zeros(ns), 'y':np.zeros(ns), 'z':np.zeros(ns), 'vx':np.zeros(ns), 'vy':np.zeros(ns), 
-			'vz':np.zeros(ns), 'metals':np.zeros(ns), 'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
+
+	catg = {'mass':np.zeros(ng), 'pos':np.zeros((ng,3)), 'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),
+			'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng),	'phi':np.zeros(ng)}
+	catd = {'mass':np.zeros(nd), 'pos':np.zeros((nd,3)), 'vel':np.zeros((nd,3)),
+			'eps':np.zeros(nd), 'phi':np.zeros(nd)}
+	cats = {'mass':np.zeros(ns), 'pos':np.zeros((ns,3)), 'vel':np.zeros((ns,3)),
+			'metals':np.zeros(ns), 'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
+	for cat in ['g','d','s']:
+		j = 0
+		for qty in ['x','y','z']:
+			locals()['cat'+cat][qty] = locals()['cat'+cat]['pos'][:,j]
+			locals()['cat'+cat]['v'+qty] = locals()['cat'+cat]['vel'][:,j]
+			j += 1
+
 	if (ng > 0):
 		for i in range(ng):
 			if endianswap:
