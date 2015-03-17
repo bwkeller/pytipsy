@@ -40,7 +40,7 @@ def rtipsy(filename, VERBOSE=False):
 		if VERBOSE:
 			print "SWAP_ENDIAN"
 	if VERBOSE:
-		print "Read time,n,ngas,ndark,nstar: ", t, n, ngas, ndark, nstar
+		print "Read time,n,ngas,ndark,nstar: ", t, n, ng, nd, ns
 	#Catch for 4 byte padding
 	if (fs == 32+48*ng+36*nd+44*ns):
 		f.read(4)
