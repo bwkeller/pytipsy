@@ -25,7 +25,7 @@ def rtipsy(filename, VERBOSE=False):
 	try:
 		f = open(filename, 'rb')
 	except:
-		print "RTIPSY ERROR: Can't open file"
+		print("RTIPSY ERROR: Can't open file")
 		return 1
 	fs = len(f.read())
 	f.seek(0)
@@ -38,20 +38,20 @@ def rtipsy(filename, VERBOSE=False):
 		f.seek(0)
 		t, n, ndim, ng, nd, ns = struct.unpack(">diiiii", f.read(28))
 		if VERBOSE:
-			print "SWAP_ENDIAN"
+			print("SWAP_ENDIAN")
 	if VERBOSE:
-		print "Read time,n,ngas,ndark,nstar: ", t, n, ng, nd, ns
+		print("Read time,n,ngas,ndark,nstar: ", t, n, ng, nd, ns)
 	#Catch for 4 byte padding
 	if (fs == 32+48*ng+36*nd+44*ns):
 		f.read(4)
 	#File is borked if this is true
 	elif (fs != 28+48*ng+36*nd+44*ns):
-		print "RTIPSY ERROR: Header and file size inconsistent"
-		print "Estimates: Header bytes:  28 or 32 (either is OK)"
-		print "     ngas: ",ng," bytes:",48*ng
-		print "    ndark: ",nd," bytes:",36*nd
-		print "    nstar: ",ns," bytes:",44*ns
-		print "Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns
+		print("RTIPSY ERROR: Header and file size inconsistent")
+		print("Estimates: Header bytes:  28 or 32 (either is OK)")
+		print("     ngas: ",ng," bytes:",48*ng)
+		print("    ndark: ",nd," bytes:",36*nd)
+		print("    nstar: ",ns," bytes:",44*ns)
+		print("Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns)
 		f.close()
 		return 1
 
@@ -125,7 +125,7 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True):
 	try:
 		f = open(filename, 'wb')
 	except:
-		print "WTIPSY ERROR: Can't open file"
+		print("WTIPSY ERROR: Can't open file")
 		return 1
 	f.write(struct.pack(">diiiii", header['time'], header['n'], header['ndim'], header['ngas'], header['ndark'], header['nstar']))
 	if STANDARD:
