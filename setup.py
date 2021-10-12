@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
 		name="PyTipsy",
-		version='1.3',
+		version='1.4',
 		author='BW Keller',
 		author_email='malzraa@gmail.com',
 		url='https://github.com/bwkeller/pytipsy',
