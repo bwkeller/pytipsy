@@ -8,15 +8,17 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
     big endian, little endian, padded (standard) or non-padded header 
 
     Usage: 
-          rtipsy(filename, VERBOSE=False)
+          rtipsy(filename, return_STANDARD=False, VERBOSE=False)
 
     Input parameters: 
     filename  filename string
     VERBOSE  print messages (optional)
+    return_STANDARD do we return a boolean indicating the endianness?
     Return values:
-    (header,g,d,s)
+    (header,g,d,s), [return_STANDARD]
     header    tipsy header struct
     g,d,s     gas, dark and star structures
+    return_STANDARD optional, boolean indicating endianness
     Please read rtipsy.py for the structure definitions
 
     Example: 
@@ -95,6 +97,53 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
     else:
         return (header,catg,catd,cats)
 
+def checktipsy(filename, VERBOSE=False):
+    """checktipsy Checks tipsy files detecting the format: 
+    big endian, little endian, padded (standard) or non-padded header 
+    but does not read the data
+
+    Usage: 
+          checktipsy(filename, VERBOSE=False)
+
+    Input parameters: 
+    filename  filename string
+    VERBOSE  print messages (optional)
+    Return values:
+    (file,header,endianswap)
+    """
+
+    try:
+        f = open(filename, 'rb')
+    except:
+        print("TIPSY ERROR: Can't open file",filename)
+    fs = os.fstat(f.fileno()).st_size
+    #Read in the header
+    t, n, ndim, ng, nd, ns = struct.unpack("<diiiii", f.read(28))
+    endianswap = False
+    #Check Endianness
+    if (ndim < 1 or ndim > 3):
+        endianswap = True
+        f.seek(0)
+        t, n, ndim, ng, nd, ns = struct.unpack(">diiiii", f.read(28))
+        if VERBOSE:
+            print("SWAP_ENDIAN")
+    if VERBOSE:
+        print("Header: time,n,ngas,ndark,nstar: ", t, n, ng, nd, ns)
+    #Catch for 4 byte padding
+    if (fs == 32+48*ng+36*nd+44*ns):
+        f.read(4)
+    #File is borked if this is true
+    elif (fs != 28+48*ng+36*nd+44*ns):
+        print("TIPSY ERROR: Header and file size inconsistent")
+        print("Estimates: Header bytes:  28 or 32 (either is OK)")
+        print("     ngas: ",ng," bytes:",48*ng)
+        print("    ndark: ",nd," bytes:",36*nd)
+        print("    nstar: ",ns," bytes:",44*ns)
+        print("Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns)
+        f.close()
+
+    return(f,(t, n, ndim, ng, nd, ns), endianswap)
+
 def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
     """wtipsy  Write tipsy files in selected format
     big endian, little endian, padded (standard) or non-padded header 
@@ -153,7 +202,7 @@ def checkarray(filename, VERBOSE=True):
     but does not read the data
 
     Usage: 
-          checktipsy(filename, VERBOSE=False)
+          checkarray(filename, VERBOSE=False)
 
     Input parameters: 
     filename  filename string
@@ -165,7 +214,6 @@ def checkarray(filename, VERBOSE=True):
         f = open(filename, 'rb')
     except:
         print("array ERROR: Can't open file",filename)
-        return (None,None,None)
 
     fs = os.fstat(f.fileno()).st_size
     #Read in the header
@@ -178,46 +226,43 @@ def checkarray(filename, VERBOSE=True):
         nswap, = struct.unpack(">i", f.read(4))
         if (fs != 4+4*nswap):
             f.close()
-        if (VERBOSE):
             print("RTIPSY ERROR: Header (native: %d std: %d) and file size n
                   (%d) inconsistent" % (n,nswap,(fs-4)//4) )
-        return (None,None,None)
         n=nswap
 
     return(f,n,endianswap)
 
-def rarray(filename, STANDARD_list=None, INTEGER=False, VERBOSE=False ):
+def rarray(filename, return_STANDARD=False, INTEGER=False, VERBOSE=False ):
     """rarray reads tipsy array files detecting the format: 
     big endian, little endian, number and returns the data
     
     Usage: 
-    rarray(filename, [STANDARD_list,] VERBOSE=False)
+    rarray(filename, return_STANDARD=False, INTEGER=False, VERBOSE=False)
     
     Input parameters: 
     filename  filename string
-    STANDARD_list  optional list where you can save endianswap True/False
+    return_STANDARD do we return the endianness?
     INTEGER  assume integer data
     VERBOSE  print messages (optional)
     Return values:
-    read array or 1 for fail
+    read array, possibly the endianness as well.
     """
 
     f,n,endianswap = checkarray(filename, VERBOSE=VERBOSE)
-    if (f == None): return 1
-
-    if (type(STANDARD_list) == list):
-    STANDARD_list.insert(0,endianswap)
 
     readformat = '>%s' % (n) if endianswap else '<%s' % (n) 
     readformat += 'i' if INTEGER else 'f' 
 
     data = np.array(struct.unpack(readformat, f.read(n*4)))
     if (len(data)!=n):
-    print("Failed to read all data",len(data),n)
+        print("Failed to read all data",len(data),n)
     elif (VERBOSE):
-    print("Succesfully read all data",len(data),n)
+        print("Succesfully read all data",len(data),n)
     f.close()
-    return data
+    if return_STANDARD:
+        return data, endianswap
+    else:
+        return data
 
 def warray(filename, data, STANDARD=True, VERBOSE=False):
     """warray writes tipsy array files using the given format
@@ -236,77 +281,26 @@ def warray(filename, data, STANDARD=True, VERBOSE=False):
     """
 
     try:
-    f = open(filename, 'wb')
+        f = open(filename, 'wb')
     except:
-    print("warray ERROR: Can't open file")
-    return 1
+        print("warray ERROR: Can't open file")
 
     if (STANDARD):                
-    f.write(struct.pack(">i", len(data)))
-    writeformat = '>'
+        f.write(struct.pack(">i", len(data)))
+        writeformat = '>'
     else:                
-    f.write(struct.pack("<i", len(data)))
-    writeformat = '<'
+        f.write(struct.pack("<i", len(data)))
+        writeformat = '<'
 
     if (len(data)>0):
-    writeformat += '%s' % (len(data)) 
-    writeformat += 'i' if 'int' in str(type(data[0])) else 'f'
+        writeformat += '%s' % (len(data)) 
+        writeformat += 'i' if 'int' in str(type(data[0])) else 'f'
+        f.write(struct.pack(writeformat, *data))
 
-    f.write(struct.pack(writeformat, *data))
     if (VERBOSE):
         print("Wrote all data",len(data))
 
     f.close()
-
-def checktipsy(filename, VERBOSE=False):
-    """checktipsy Checks tipsy files detecting the format: 
-    big endian, little endian, padded (standard) or non-padded header 
-    but does not read the data
-
-    Usage: 
-          checktipsy(filename, VERBOSE=False)
-
-    Input parameters: 
-    filename  filename string
-    VERBOSE  print messages (optional)
-    Return values:
-    (file,header,endianswap)
-    """
-
-    try:
-        f = open(filename, 'rb')
-    except:
-        print("TIPSY ERROR: Can't open file",filename)
-        return (None,None,None)
-    fs = os.fstat(f.fileno()).st_size
-    #Read in the header
-    t, n, ndim, ng, nd, ns = struct.unpack("<diiiii", f.read(28))
-    endianswap = False
-    #Check Endianness
-    if (ndim < 1 or ndim > 3):
-        endianswap = True
-        f.seek(0)
-        t, n, ndim, ng, nd, ns = struct.unpack(">diiiii", f.read(28))
-        if VERBOSE:
-            print("SWAP_ENDIAN")
-    if VERBOSE:
-        print("Header: time,n,ngas,ndark,nstar: ", t, n, ng, nd, ns)
-    #Catch for 4 byte padding
-    if (fs == 32+48*ng+36*nd+44*ns):
-        f.read(4)
-    #File is borked if this is true
-    elif (fs != 28+48*ng+36*nd+44*ns):
-        print("TIPSY ERROR: Header and file size inconsistent")
-        print("Estimates: Header bytes:  28 or 32 (either is OK)")
-        print("     ngas: ",ng," bytes:",48*ng)
-        print("    ndark: ",nd," bytes:",36*nd)
-        print("    nstar: ",ns," bytes:",44*ns)
-        print("Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns)
-        f.close()
-        return (None,None,None)
-
-    return(f,(t, n, ndim, ng, nd, ns), endianswap)
-
 
 class gaslog(dict):
     def __init__(self, fname):
