@@ -48,7 +48,8 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
 
     if (ng > 0):
         for i in range(ng):
-            mass, x, y, z, vx, vy, vz, dens, tempg, h, zmetal, phi = struct.unpack(endian+"ffffffffffff", f.read(48))
+            mass, x, y, z, vx, vy, vz, dens, tempg, h, zmetal, phi = \
+                    struct.unpack(endian+"ffffffffffff", f.read(48))
             catg['mass'][i] = mass
             catg['x'][i] = x
             catg['y'][i] = y
@@ -63,7 +64,8 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
             catg['phi'][i] = phi
     if (nd > 0):
         for i in range(nd):
-            mass, x, y, z, vx, vy, vz, eps, phi = struct.unpack(endian+"fffffffff", f.read(36))
+            mass, x, y, z, vx, vy, vz, eps, phi = \
+                    struct.unpack(endian+"fffffffff", f.read(36))
             catd['mass'][i] = mass
             catd['x'][i] = x
             catd['y'][i] = y
@@ -75,7 +77,8 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
             catd['phi'][i] = phi
     if (ns > 0):
         for i in range(ns):
-            mass, x, y, z, vx, vy, vz, metals, tform, eps, phi = struct.unpack(endian+"fffffffffff", f.read(44))
+            mass, x, y, z, vx, vy, vz, metals, tform, eps, phi = \
+            struct.unpack(endian+"fffffffffff", f.read(44))
             cats['mass'][i] = mass
             cats['x'][i] = x
             cats['y'][i] = y
@@ -118,7 +121,9 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
 
     endian='>' if STANDARD else '<'
 
-    f.write(struct.pack(endian+"diiiii", header['time'], header['n'], header['ndim'], header['ngas'], header['ndark'], header['nstar']))
+    f.write(struct.pack(endian+"diiiii", header['time'], header['n'],
+                        header['ndim'], header['ngas'], header['ndark'],
+                        header['nstar']))
     if STANDARD:
         f.write(struct.pack("xxxx"))
         if VERBOSE:
@@ -127,14 +132,22 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
         print("Native Write. Header: ",header)
 
     for i in range(header['ngas']):
-        f.write(struct.pack(endian+"ffffffffffff", catg['mass'][i], catg['x'][i], catg['y'][i], catg['z'][i], catg['vx'][i], catg['vy'][i], 
-            catg['vz'][i], catg['dens'][i], catg['tempg'][i], catg['h'][i], catg['zmetal'][i], catg['phi'][i]))
+        f.write(struct.pack(endian+"ffffffffffff", catg['mass'][i],
+                            catg['x'][i], catg['y'][i], catg['z'][i],
+                            catg['vx'][i], catg['vy'][i], catg['vz'][i],
+                            catg['dens'][i], catg['tempg'][i], catg['h'][i],
+                            catg['zmetal'][i], catg['phi'][i]))
     for i in range(header['ndark']):
-        f.write(struct.pack(endian+"fffffffff", catd['mass'][i], catd['x'][i], catd['y'][i], catd['z'][i], catd['vx'][i], catd['vy'][i], 
-            catd['vz'][i], catd['eps'][i], catd['phi'][i]))
+        f.write(struct.pack(endian+"fffffffff", catd['mass'][i], catd['x'][i],
+                            catd['y'][i], catd['z'][i], catd['vx'][i],
+                            catd['vy'][i], catd['vz'][i], catd['eps'][i],
+                            catd['phi'][i]))
     for i in range(header['nstar']):
-        f.write(struct.pack(endian+"fffffffffff", cats['mass'][i], cats['x'][i], cats['y'][i], cats['z'][i], cats['vx'][i], cats['vy'][i], 
-            cats['vz'][i], cats['metals'][i], cats['tform'][i], cats['eps'][i], cats['phi'][i]))
+        f.write(struct.pack(endian+"fffffffffff", cats['mass'][i],
+                            cats['x'][i], cats['y'][i], cats['z'][i],
+                            cats['vx'][i], cats['vy'][i], cats['vz'][i],
+                            cats['metals'][i], cats['tform'][i],
+                            cats['eps'][i], cats['phi'][i]))
     f.close()
     return 0
 
@@ -170,7 +183,8 @@ def checkarray(filename, VERBOSE=True):
         if (fs != 4+4*nswap):
             f.close()
         if (VERBOSE):
-            print("RTIPSY ERROR: Header (native: %d std: %d) and file size n (%d) inconsistent" % (n,nswap,(fs-4)//4) )
+            print("RTIPSY ERROR: Header (native: %d std: %d) and file size n
+                  (%d) inconsistent" % (n,nswap,(fs-4)//4) )
         return (None,None,None)
         n=nswap
 
@@ -300,13 +314,21 @@ def checktipsy(filename, VERBOSE=False):
 
 class gaslog(dict):
     def __init__(self, fname):
-        self.rawdata = np.genfromtxt(fname, comments='#', dtype=None, names=['dTime', 'z', 'E', 'T', 'U', 'Eth', 'Lx', 'Ly', 'Lz',
+        self.rawdata = np.genfromtxt(fname, comments='#', dtype=None,
+                                     names=['dTime', 'z', 'E', 'T', 'U', 'Eth',
+                                            'Lx', 'Ly', 'Lz',
             'WallTime', 'dwMax', 'dIMax', 'dEMax', 'dMultiEff'])
         for name in self.rawdata.dtype.names:
             self[name] = self.rawdata[name]
-        self.units = {'erg': float(re.findall('dErgPerGmUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) * \
-                float(re.findall('dMsolUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) * 1.9891e33, 'yr': \
-        float(re.findall('dSecUnit:\s*[0-9,.,e,+,-]*', open(fname).read())[0].split()[1]) / 3.1557e7}
+        self.units = {'erg':
+                      float(re.findall('dErgPerGmUnit:\s*[0-9,.,e,+,-]*',
+                                       open(fname).read())[0].split()[1]) *
+                      float(re.findall('dMsolUnit:\s*[0-9,.,e,+,-]*',
+                                       open(fname).read())[0].split()[1]) *
+                      1.9891e33, 'yr':
+                      float(re.findall('dSecUnit:\s*[0-9,.,e,+,-]*',
+                                       open(fname).read())[0].split()[1]) /
+                      3.1557e7}
         self['dTime'] *= self.units['yr']
         self['E'] *= self.units['erg']
         self['T'] *= self.units['erg']
@@ -336,8 +358,9 @@ class starlog(dict):
         self['TForm'] = np.zeros(n_sf)
         f.seek(4) # Remove 4-byte pad
         for i in range(n_sf):
-            iOrdStar, iOrdGas, timeForm, xForm, yForm, zForm, vxForm, vyForm, vzForm, massForm, \
-            rhoForm, Tform = struct.unpack('>qqdddddddddd', f.read(96))
+            iOrdStar, iOrdGas, timeForm, xForm, yForm, zForm, vxForm, vyForm, \
+            vzForm, massForm, rhoForm, Tform = struct.unpack('>qqdddddddddd',
+                                                             f.read(96))
             self['iOrdStar'][i] = iOrdStar
             self['iOrdGas'][i] = iOrdGas
             self['timeForm'][i] = timeForm
