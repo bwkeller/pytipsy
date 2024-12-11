@@ -1,12 +1,7 @@
+import os
 import re
 import struct
 import numpy as np
-import os
-
-#STANDARD = False
-# < means little endian (tipsy bindary, intel)
-#STANDARD = True
-# > means big endian (tipsy std, SUN)
 
 def checkarray(filename, VERBOSE=True):
     """checkarray Checks tipsy array files detecting the format: 
@@ -117,7 +112,6 @@ def warray(filename, data, STANDARD=True, VERBOSE=False):
         print("Wrote all data",len(data))
 
     f.close()
-    return 0
 
 def subset( a, i ):
    b={}
@@ -315,7 +309,6 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
         f.write(struct.pack(endian+"fffffffffff", cats['mass'][i], cats['x'][i], cats['y'][i], cats['z'][i], cats['vx'][i], cats['vy'][i], 
             cats['vz'][i], cats['metals'][i], cats['tform'][i], cats['eps'][i], cats['phi'][i]))
     f.close()
-    return 0
 
 class gaslog(dict):
     def __init__(self, fname):
