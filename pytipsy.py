@@ -3,6 +3,141 @@ import re
 import struct
 import numpy as np
 
+def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
+    """rtipsy Reads tipsy files detecting the format: 
+    big endian, little endian, padded (standard) or non-padded header 
+
+    Usage: 
+          rtipsy(filename, VERBOSE=False)
+
+    Input parameters: 
+    filename  filename string
+    VERBOSE  print messages (optional)
+    Return values:
+    (header,g,d,s)
+    header    tipsy header struct
+    g,d,s     gas, dark and star structures
+    Please read rtipsy.py for the structure definitions
+
+    Example: 
+    h,g,d,s = rtipsy('/home/wadsley/usr5/mihos/mihos.std')
+    print, h['ndark']
+    plt.plot(d['x'], d['y'], 'k,')"""
+
+    f,header,endianswap = checktipsy(filename, VERBOSE=VERBOSE)
+    t, n, ndim, ng, nd, ns = header
+    
+    endian = ">" if endianswap else "<"
+
+    catg = {'mass':np.zeros(ng), 'pos':np.zeros((ng,3)),
+            'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),
+            'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng),
+            'phi':np.zeros(ng)}
+    catd = {'mass':np.zeros(nd), 'pos':np.zeros((nd,3)),
+            'vel':np.zeros((nd,3)),          'eps':np.zeros(nd),
+            'phi':np.zeros(nd)}
+    cats = {'mass':np.zeros(ns), 'pos':np.zeros((ns,3)),
+            'vel':np.zeros((ns,3)),          'metals':np.zeros(ns),
+            'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
+    for cat in ['g','d','s']:
+        j = 0
+        for qty in ['x','y','z']:
+            locals()['cat'+cat][qty] = locals()['cat'+cat]['pos'][:,j]
+            locals()['cat'+cat]['v'+qty] = locals()['cat'+cat]['vel'][:,j]
+            j += 1
+
+    if (ng > 0):
+        for i in range(ng):
+            mass, x, y, z, vx, vy, vz, dens, tempg, h, zmetal, phi = struct.unpack(endian+"ffffffffffff", f.read(48))
+            catg['mass'][i] = mass
+            catg['x'][i] = x
+            catg['y'][i] = y
+            catg['z'][i] = z
+            catg['vx'][i] = vx
+            catg['vy'][i] = vy
+            catg['vz'][i] = vz
+            catg['dens'][i] = dens
+            catg['tempg'][i] = tempg
+            catg['h'][i] = h
+            catg['zmetal'][i] = zmetal
+            catg['phi'][i] = phi
+    if (nd > 0):
+        for i in range(nd):
+            mass, x, y, z, vx, vy, vz, eps, phi = struct.unpack(endian+"fffffffff", f.read(36))
+            catd['mass'][i] = mass
+            catd['x'][i] = x
+            catd['y'][i] = y
+            catd['z'][i] = z
+            catd['vx'][i] = vx
+            catd['vy'][i] = vy
+            catd['vz'][i] = vz
+            catd['eps'][i] = eps
+            catd['phi'][i] = phi
+    if (ns > 0):
+        for i in range(ns):
+            mass, x, y, z, vx, vy, vz, metals, tform, eps, phi = struct.unpack(endian+"fffffffffff", f.read(44))
+            cats['mass'][i] = mass
+            cats['x'][i] = x
+            cats['y'][i] = y
+            cats['z'][i] = z
+            cats['vx'][i] = vx
+            cats['vy'][i] = vy
+            cats['vz'][i] = vz
+            cats['metals'][i] = metals
+            cats['tform'][i] = tform
+            cats['eps'][i] = eps
+            cats['phi'][i] = phi
+    if return_STANDARD:
+        return (header,catg,catd,cats), endianswap
+    else:
+        return (header,catg,catd,cats)
+
+def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
+    """wtipsy  Write tipsy files in selected format
+    big endian, little endian, padded (standard) or non-padded header 
+
+    Usage: 
+         wtipsy(filename, header, g, d, s, STANDARD=True, VERBOSE=False)
+
+    Input parameters: 
+    filename  filename string
+    header    tipsy header struct
+    g,d,s     gas, dark and star structures
+    STANDARD True for standard big endian
+    VERBOSE  print messages (optional)
+    Return values:
+      0 success  1 fail
+    Please read pytipsy.py for the structure definitions
+    """
+
+    try:
+        f = open(filename, 'wb')
+    except:
+        print("WTIPSY ERROR: Can't open file")
+        return 1
+
+    endian='>' if STANDARD else '<'
+
+    f.write(struct.pack(endian+"diiiii", header['time'], header['n'], header['ndim'], header['ngas'], header['ndark'], header['nstar']))
+    if STANDARD:
+        f.write(struct.pack("xxxx"))
+        if VERBOSE:
+            print("STANDARD Write. Header: ",header)
+    elif VERBOSE:
+        print("Native Write. Header: ",header)
+
+    for i in range(header['ngas']):
+        f.write(struct.pack(endian+"ffffffffffff", catg['mass'][i], catg['x'][i], catg['y'][i], catg['z'][i], catg['vx'][i], catg['vy'][i], 
+            catg['vz'][i], catg['dens'][i], catg['tempg'][i], catg['h'][i], catg['zmetal'][i], catg['phi'][i]))
+    for i in range(header['ndark']):
+        f.write(struct.pack(endian+"fffffffff", catd['mass'][i], catd['x'][i], catd['y'][i], catd['z'][i], catd['vx'][i], catd['vy'][i], 
+            catd['vz'][i], catd['eps'][i], catd['phi'][i]))
+    for i in range(header['nstar']):
+        f.write(struct.pack(endian+"fffffffffff", cats['mass'][i], cats['x'][i], cats['y'][i], cats['z'][i], cats['vx'][i], cats['vy'][i], 
+            cats['vz'][i], cats['metals'][i], cats['tform'][i], cats['eps'][i], cats['phi'][i]))
+    f.close()
+    return 0
+
 def checkarray(filename, VERBOSE=True):
     """checkarray Checks tipsy array files detecting the format: 
     big endian, little endian, number 
@@ -33,7 +168,7 @@ def checkarray(filename, VERBOSE=True):
         f.seek(0)
         nswap, = struct.unpack(">i", f.read(4))
         if (fs != 4+4*nswap):
-        f.close()
+            f.close()
         if (VERBOSE):
             print("RTIPSY ERROR: Header (native: %d std: %d) and file size n (%d) inconsistent" % (n,nswap,(fs-4)//4) )
         return (None,None,None)
@@ -162,147 +297,6 @@ def checktipsy(filename, VERBOSE=False):
 
     return(f,(t, n, ndim, ng, nd, ns), endianswap)
 
-def rtipsy(filename, STANDARD_list=None, VERBOSE=False):
-    """rtipsy Reads tipsy files detecting the format: 
-    big endian, little endian, padded (standard) or non-padded header 
-
-    Usage: 
-          rtipsy(filename, VERBOSE=False)
-
-    Input parameters: 
-    filename  filename string
-    VERBOSE  print messages (optional)
-    Return values:
-    (header,g,d,s)
-    header    tipsy header struct
-    g,d,s     gas, dark and star structures
-    Please read rtipsy.py for the structure definitions
-
-    Example: 
-    h,g,d,s = rtipsy('/home/wadsley/usr5/mihos/mihos.std')
-    print, h['ndark']
-    plt.plot(d['x'], d['y'], 'k,')"""
-
-    f,header,endianswap = checktipsy(filename, VERBOSE=VERBOSE)
-    t, n, ndim, ng, nd, ns = header
-    if (type(STANDARD_list) == list):
-        STANDARD_list.insert(0,endianswap)
-
-    catg = {'mass':np.zeros(ng), 'pos':np.zeros((ng,3)),
-            'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),
-            'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng),
-            'phi':np.zeros(ng)}
-    catd = {'mass':np.zeros(nd), 'pos':np.zeros((nd,3)),
-            'vel':np.zeros((nd,3)),          'eps':np.zeros(nd),
-            'phi':np.zeros(nd)}
-    cats = {'mass':np.zeros(ns), 'pos':np.zeros((ns,3)),
-            'vel':np.zeros((ns,3)),          'metals':np.zeros(ns),
-            'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
-    for cat in ['g','d','s']:
-        j = 0
-        for qty in ['x','y','z']:
-            locals()['cat'+cat][qty] = locals()['cat'+cat]['pos'][:,j]
-            locals()['cat'+cat]['v'+qty] = locals()['cat'+cat]['vel'][:,j]
-            j += 1
-
-    if (ng > 0):
-        for i in range(ng):
-            if endianswap:
-                mass, x, y, z, vx, vy, vz, dens, tempg, h, zmetal, phi = struct.unpack(">ffffffffffff", f.read(48))
-            else:
-                mass, x, y, z, vx, vy, vz, dens, tempg, h, zmetal, phi = struct.unpack("<ffffffffffff", f.read(48))
-            catg['mass'][i] = mass
-            catg['x'][i] = x
-            catg['y'][i] = y
-            catg['z'][i] = z
-            catg['vx'][i] = vx
-            catg['vy'][i] = vy
-            catg['vz'][i] = vz
-            catg['dens'][i] = dens
-            catg['tempg'][i] = tempg
-            catg['h'][i] = h
-            catg['zmetal'][i] = zmetal
-            catg['phi'][i] = phi
-    if (nd > 0):
-        for i in range(nd):
-            if endianswap:
-                mass, x, y, z, vx, vy, vz, eps, phi = struct.unpack(">fffffffff", f.read(36))
-            else:
-                mass, x, y, z, vx, vy, vz, eps, phi = struct.unpack("<fffffffff", f.read(36))
-            catd['mass'][i] = mass
-            catd['x'][i] = x
-            catd['y'][i] = y
-            catd['z'][i] = z
-            catd['vx'][i] = vx
-            catd['vy'][i] = vy
-            catd['vz'][i] = vz
-            catd['eps'][i] = eps
-            catd['phi'][i] = phi
-    if (ns > 0):
-        for i in range(ns):
-            if endianswap:
-                mass, x, y, z, vx, vy, vz, metals, tform, eps, phi = struct.unpack(">fffffffffff", f.read(44))
-            else:
-                mass, x, y, z, vx, vy, vz, metals, tform, eps, phi = struct.unpack("<fffffffffff", f.read(44))
-            cats['mass'][i] = mass
-            cats['x'][i] = x
-            cats['y'][i] = y
-            cats['z'][i] = z
-            cats['vx'][i] = vx
-            cats['vy'][i] = vy
-            cats['vz'][i] = vz
-            cats['metals'][i] = metals
-            cats['tform'][i] = tform
-            cats['eps'][i] = eps
-            cats['phi'][i] = phi
-
-            
-    return (header,catg,catd,cats)
-
-def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
-    """wtipsy  Write tipsy files in selected format
-    big endian, little endian, padded (standard) or non-padded header 
-
-    Usage: 
-         wtipsy(filename, header, g, d, s, STANDARD=True, VERBOSE=False)
-
-    Input parameters: 
-    filename  filename string
-    header    tipsy header struct
-    g,d,s     gas, dark and star structures
-    STANDARD True for standard big endian
-    VERBOSE  print messages (optional)
-    Return values:
-      0 success  1 fail
-    Please read pytipsy.py for the structure definitions
-    """
-
-    try:
-        f = open(filename, 'wb')
-    except:
-        print("WTIPSY ERROR: Can't open file")
-        return 1
-
-    endian='>' if STANDARD else '<'
-
-    f.write(struct.pack(endian+"diiiii", header['time'], header['n'], header['ndim'], header['ngas'], header['ndark'], header['nstar']))
-    if (STANDARD):
-        f.write(struct.pack("xxxx"))
-        if (VERBOSE):
-        print("STANDARD Write. Header: ",header)
-    elif (VERBOSE):
-        print("Native Write. Header: ",header)
-
-    for i in range(header['ngas']):
-        f.write(struct.pack(endian+"ffffffffffff", catg['mass'][i], catg['x'][i], catg['y'][i], catg['z'][i], catg['vx'][i], catg['vy'][i], 
-            catg['vz'][i], catg['dens'][i], catg['tempg'][i], catg['h'][i], catg['zmetal'][i], catg['phi'][i]))
-    for i in range(header['ndark']):
-        f.write(struct.pack(endian+"fffffffff", catd['mass'][i], catd['x'][i], catd['y'][i], catd['z'][i], catd['vx'][i], catd['vy'][i], 
-            catd['vz'][i], catd['eps'][i], catd['phi'][i]))
-    for i in range(header['nstar']):
-        f.write(struct.pack(endian+"fffffffffff", cats['mass'][i], cats['x'][i], cats['y'][i], cats['z'][i], cats['vx'][i], cats['vy'][i], 
-            cats['vz'][i], cats['metals'][i], cats['tform'][i], cats['eps'][i], cats['phi'][i]))
-    f.close()
 
 class gaslog(dict):
     def __init__(self, fname):
