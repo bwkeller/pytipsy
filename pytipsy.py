@@ -125,37 +125,6 @@ def subset( a, i ):
       b[ key ] = a[ key ][i]
    return b
             
-def makeheader(t,n,ndim,ng,nd,ns):
-   return {'time':t, 'n':n, 'ndim':ndim, 'ngas':ng, 'ndark':nd, 'nstar':ns}
-
-def makecatg(ng):
-   catgraw={'mass':np.zeros(ng), 'pos':np.zeros((ng,3)), 'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng), 'phi':np.zeros(ng)}
-   j = 0
-   for qty in ['x','y','z']:
-      locals()['catgraw'][qty] = locals()['catgraw']['pos'][:,j]
-      locals()['catgraw']['v'+qty] = locals()['catgraw']['vel'][:,j]
-      j += 1
-   return catgraw
-
-def makecatd(nd):
-   catdraw={'mass':np.zeros(nd), 'pos':np.zeros((nd,3)), 'vel':np.zeros((nd,3)),
-            'eps':np.zeros(nd), 'phi':np.zeros(nd)}
-   j = 0
-   for qty in ['x','y','z']:
-      locals()['catdraw'][qty] = locals()['catdraw']['pos'][:,j]
-      locals()['catdraw']['v'+qty] = locals()['catdraw']['vel'][:,j]
-      j += 1
-   return catdraw
-
-def makecats(ns):
-   catsraw={'mass':np.zeros(ns), 'pos':np.zeros((ns,3)), 'vel':np.zeros((ns,3)),'metals':np.zeros(ns), 'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
-   j = 0
-   for qty in ['x','y','z']:
-      locals()['catsraw'][qty] = locals()['catsraw']['pos'][:,j]
-      locals()['catsraw']['v'+qty] = locals()['catsraw']['vel'][:,j]
-      j += 1
-   return catsraw
-
 def checktipsy(filename, VERBOSE=False):
     """checktipsy Checks tipsy files detecting the format: 
     big endian, little endian, padded (standard) or non-padded header 
@@ -203,7 +172,7 @@ def checktipsy(filename, VERBOSE=False):
         f.close()
         return (None,None,None)
 
-    return( f,(t, n, ndim, ng, nd, ns),endianswap)
+    return(f,(t, n, ndim, ng, nd, ns), endianswap)
 
 def rtipsy(filename, STANDARD_list=None, VERBOSE=False):
     """rtipsy Reads tipsy files detecting the format: 
@@ -231,9 +200,16 @@ def rtipsy(filename, STANDARD_list=None, VERBOSE=False):
     if (type(STANDARD_list) == list):
         STANDARD_list.insert(0,endianswap)
 
-    catg = makecatg(ng) #{'mass':np.zeros(ng), 'pos':np.zeros((ng,3)), 'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),         'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng),  'phi':np.zeros(ng)}
-    catd = makecatd(nd) #{'mass':np.zeros(nd), 'pos':np.zeros((nd,3)), 'vel':np.zeros((nd,3)),          'eps':np.zeros(nd), 'phi':np.zeros(nd)}
-    cats = makecats(ns) #{'mass':np.zeros(ns), 'pos':np.zeros((ns,3)), 'vel':np.zeros((ns,3)),          'metals':np.zeros(ns), 'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
+    catg = {'mass':np.zeros(ng), 'pos':np.zeros((ng,3)),
+            'vel':np.zeros((ng,3)), 'dens':np.zeros(ng),
+            'tempg':np.zeros(ng), 'h':np.zeros(ng), 'zmetal':np.zeros(ng),
+            'phi':np.zeros(ng)}
+    catd = {'mass':np.zeros(nd), 'pos':np.zeros((nd,3)),
+            'vel':np.zeros((nd,3)),          'eps':np.zeros(nd),
+            'phi':np.zeros(nd)}
+    cats = {'mass':np.zeros(ns), 'pos':np.zeros((ns,3)),
+            'vel':np.zeros((ns,3)),          'metals':np.zeros(ns),
+            'tform':np.zeros(ns), 'eps':np.zeros(ns), 'phi':np.zeros(ns)}
     for cat in ['g','d','s']:
         j = 0
         for qty in ['x','y','z']:
@@ -293,7 +269,6 @@ def rtipsy(filename, STANDARD_list=None, VERBOSE=False):
             cats['phi'][i] = phi
 
             
-    header = makeheader(t,n,ndim,ng,nd,ns) #{'time':t, 'n':n, 'ndim':ndim, 'ngas':ng, 'ndark':nd, 'nstar':ns}
     return (header,catg,catd,cats)
 
 def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
