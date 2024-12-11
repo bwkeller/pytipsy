@@ -108,8 +108,6 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
     g,d,s     gas, dark and star structures
     STANDARD True for standard big endian
     VERBOSE  print messages (optional)
-    Return values:
-      0 success  1 fail
     Please read pytipsy.py for the structure definitions
     """
 
@@ -117,7 +115,6 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
         f = open(filename, 'wb')
     except:
         print("WTIPSY ERROR: Can't open file")
-        return 1
 
     endian='>' if STANDARD else '<'
 
@@ -149,7 +146,6 @@ def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
                             cats['metals'][i], cats['tform'][i],
                             cats['eps'][i], cats['phi'][i]))
     f.close()
-    return 0
 
 def checkarray(filename, VERBOSE=True):
     """checkarray Checks tipsy array files detecting the format: 
