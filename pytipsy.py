@@ -113,12 +113,6 @@ def warray(filename, data, STANDARD=True, VERBOSE=False):
 
     f.close()
 
-def subset( a, i ):
-   b={}
-   for key, value in a.items():
-      b[ key ] = a[ key ][i]
-   return b
-            
 def checktipsy(filename, VERBOSE=False):
     """checktipsy Checks tipsy files detecting the format: 
     big endian, little endian, padded (standard) or non-padded header 
