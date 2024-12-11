@@ -357,3 +357,40 @@ class gaslog(dict):
         self['U'] *= self.units['erg']
         self['Eth'] *= self.units['erg']
 
+class starlog(dict):
+    def __init__(self, fname):
+        try:
+            f = open(fname, 'rb')
+        except:
+            print("Cannot open starlog!")
+            return 1
+        # Calculate number of entries
+        n_sf = int((f.seek(0, os.SEEK_END)-4)/96)
+        self['iOrdStar'] = np.zeros(n_sf, dtype=np.int64)
+        self['iOrdGas'] = np.zeros(n_sf, dtype=np.int64)
+        self['timeForm'] = np.zeros(n_sf)
+        self['xForm'] = np.zeros(n_sf)
+        self['yForm'] = np.zeros(n_sf)
+        self['zForm'] = np.zeros(n_sf)
+        self['vxForm'] = np.zeros(n_sf)
+        self['vyForm'] = np.zeros(n_sf)
+        self['vzForm'] = np.zeros(n_sf)
+        self['massForm'] = np.zeros(n_sf)
+        self['rhoForm'] = np.zeros(n_sf)
+        self['TForm'] = np.zeros(n_sf)
+        f.seek(4) # Remove 4-byte pad
+        for i in range(n_sf):
+            iOrdStar, iOrdGas, timeForm, xForm, yForm, zForm, vxForm, vyForm, vzForm, massForm, \
+            rhoForm, Tform = struct.unpack('>qqdddddddddd', f.read(96))
+            self['iOrdStar'][i] = iOrdStar
+            self['iOrdGas'][i] = iOrdGas
+            self['timeForm'][i] = timeForm
+            self['xForm'][i] = xForm
+            self['yForm'][i] = yForm
+            self['zForm'][i] = zForm
+            self['vxForm'][i] = vxForm
+            self['vyForm'][i] = vyForm
+            self['vzForm'][i] = vzForm
+            self['massForm'][i] = massForm
+            self['rhoForm'][i] = rhoForm
+            self['TForm'][i] = Tform
