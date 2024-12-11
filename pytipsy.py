@@ -27,7 +27,7 @@ def rtipsy(filename, return_STANDARD=False, VERBOSE=False):
     plt.plot(d['x'], d['y'], 'k,')"""
 
     f,header,endianswap = checktipsy(filename, VERBOSE=VERBOSE)
-    t, n, ndim, ng, nd, ns = header
+    ng,nd,ns = (header['ngas'], header['ndark'], header['nstar'])
     
     endian = ">" if endianswap else "<"
 
@@ -142,7 +142,7 @@ def checktipsy(filename, VERBOSE=False):
         print("Actual File bytes:",fs,"  not one of:",28+48*ng+36*nd+44*ns,32+48*ng+36*nd+44*ns)
         f.close()
 
-    return(f,(t, n, ndim, ng, nd, ns), endianswap)
+    return(f,{'time':t, 'n':n, 'ndim':ndim, 'ngas':ng, 'ndark':nd, 'nstar':ns}, endianswap)
 
 def wtipsy(filename, header, catg, catd, cats, STANDARD=True, VERBOSE=False):
     """wtipsy  Write tipsy files in selected format
@@ -226,8 +226,7 @@ def checkarray(filename, VERBOSE=True):
         nswap, = struct.unpack(">i", f.read(4))
         if (fs != 4+4*nswap):
             f.close()
-            print("RTIPSY ERROR: Header (native: %d std: %d) and file size n
-                  (%d) inconsistent" % (n,nswap,(fs-4)//4) )
+            print("RARRAY ERROR: Header (native: %d std: %d) and file size n (%d) inconsistent" % (n,nswap,(fs-4)//4) )
         n=nswap
 
     return(f,n,endianswap)
@@ -311,12 +310,12 @@ class gaslog(dict):
         for name in self.rawdata.dtype.names:
             self[name] = self.rawdata[name]
         self.units = {'erg':
-                      float(re.findall('dErgPerGmUnit:\s*[0-9,.,e,+,-]*',
+                      float(re.findall(r'dErgPerGmUnit:\s*[0-9,.,e,+,-]*',
                                        open(fname).read())[0].split()[1]) *
-                      float(re.findall('dMsolUnit:\s*[0-9,.,e,+,-]*',
+                      float(re.findall(r'dMsolUnit:\s*[0-9,.,e,+,-]*',
                                        open(fname).read())[0].split()[1]) *
                       1.9891e33, 'yr':
-                      float(re.findall('dSecUnit:\s*[0-9,.,e,+,-]*',
+                      float(re.findall(r'dSecUnit:\s*[0-9,.,e,+,-]*',
                                        open(fname).read())[0].split()[1]) /
                       3.1557e7}
         self['dTime'] *= self.units['yr']
