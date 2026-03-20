@@ -301,29 +301,6 @@ def warray(filename, data, STANDARD=True, VERBOSE=False):
 
     f.close()
 
-class gaslog(dict):
-    def __init__(self, fname):
-        self.rawdata = np.genfromtxt(fname, comments='#', dtype=None,
-                                     names=['dTime', 'z', 'E', 'T', 'U', 'Eth',
-                                            'Lx', 'Ly', 'Lz',
-            'WallTime', 'dwMax', 'dIMax', 'dEMax', 'dMultiEff'])
-        for name in self.rawdata.dtype.names:
-            self[name] = self.rawdata[name]
-        self.units = {'erg':
-                      float(re.findall(r'dErgPerGmUnit:\s*[0-9,.,e,+,-]*',
-                                       open(fname).read())[0].split()[1]) *
-                      float(re.findall(r'dMsolUnit:\s*[0-9,.,e,+,-]*',
-                                       open(fname).read())[0].split()[1]) *
-                      1.9891e33, 'yr':
-                      float(re.findall(r'dSecUnit:\s*[0-9,.,e,+,-]*',
-                                       open(fname).read())[0].split()[1]) /
-                      3.1557e7}
-        self['dTime'] *= self.units['yr']
-        self['E'] *= self.units['erg']
-        self['T'] *= self.units['erg']
-        self['U'] *= self.units['erg']
-        self['Eth'] *= self.units['erg']
-
 class starlog(dict):
     def __init__(self, fname):
         try:

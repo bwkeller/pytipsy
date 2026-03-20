@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "pytipsy"
+version = "1.0"
+authors = [
+    {name="BW Keller", email="malzraa@gmail.com"},
+]
+description = "low-level tools for working with tipsy simulation outputs"
+readme = "README.md"
+requires-python = ">3.0"
+license = "GPL-3.0-only"
+license-files = [
+    "LICENSE.md",
+    ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: File Formats",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = [
+    "numpy>=1.5",
+]
+
+[tools.setuptools]
+py-modules = [
+    'pytipsy',
+]

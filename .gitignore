@@ -28,3 +28,6 @@ pip-log.txt
 
 #Vim swapfiles
 *.swp
+
+#Virtual Env
+.venv
